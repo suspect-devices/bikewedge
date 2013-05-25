@@ -1,4 +1,5 @@
-"""-------------------------------------------------------------------------netsuck.py
+"""------------------------------------------------------------------------bikewedge.py
+    
     DESCRIPTION: This code intercepts both sides of opensprints/goldsprintsfx 
     "conversation" to control a visual indication of progress using something 
     like a phsical clock or a race tree.
@@ -13,16 +14,25 @@
     job of recovering when the pile of flash or the serial proxy crashes (which 
     happens). 
     It creates a server on 5331 (the only port gold sprints checks) and expects 
-    to listen to serproxy on 5330
+    to listen to serproxy on 5330 it talks to the clock on 5332
+    it should eventually check and start serproxy and the goldsprints programs.
+    it should also do a better job of recovering from issues created by externals.
+    
+    It has a lot of number foo (hard coding) in it that should be cleaned up
+    
 """
 import socket
 import re
 isocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 osocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+csocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 isocket.connect(('localhost',5330))
 #isocket.setblocking(0)
 isocket.settimeout(0.2)
 print "Connected to serproxy"
+csocket.connect(('localhost',5332))
+csocket.settimeout(0.2)
+print "Connected to clock"
 osocket.bind(('',5331))
 osocket.listen(1)
 
@@ -44,6 +54,7 @@ try:
                 for chunk in receivedData.split('\x00'):
                     if len(chunk)>0 and chunk[0] == 's':
                         print "(RE)SET RACE !!!"
+                        csocket.sendall("s\n");
                 if len(receivedData)==0:
                     print "ISSUE WITH CLIENT"
                 
@@ -58,11 +69,18 @@ try:
                     #if len(chunk.rstrip('\r')):
                     #    print "<",re.escape(chunk),len(chunk)
                     if len(chunk) > 4 and chunk[0]=='0' :
-                        done1=int((float(chunk[3:])/1566.0) * 100.00)
-                        print "Bike # 1 is ", str(done1), "percent done"
+                        done1=(float(chunk[3:])/1566.0) * 100.00
+                        if done1>100.00 :
+                            done1=100.00
+                        print "Bike # 1 is ", str(int(done1)), "percent done"
+                        csocket.sendall("d1:"+str(int(21.32*(done1)))+"\n")
                     if len(chunk) > 4 and chunk[0]=='1' :
-                        done1=int((float(chunk[3:])/1566.0) * 100.00)
-                        print "Bike # 2 is ", str(done1), "percent done"
+                        done2=(float(chunk[3:])/1566.0) * 100.00
+                        if done2>100.00 :
+                            done2=100.00
+                        print "Bike # 2 is ", str(int(done2)), "percent done"
+                        csocket.sendall("d2:"+str(int(21.32*(done2)))+"\n")
+                    
                 if len(sentData)==0:
                     print "ISSUE WITH SERPROXY"
                     try:
@@ -72,6 +90,8 @@ try:
                         isocket.connect(('localhost',5330))                        
                     break
 finally:
+    #need to see if connections is defined....
     connection.close()
+    csocket.close()
     osocket.close()
     isocket.close()

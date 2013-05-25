@@ -49,7 +49,7 @@ boolean isReceivingRaceLength = false;
 int raceLengthTicks = 20;
 int previousFakeTickMillis = 0;
 
-int updateInterval = 250;
+int updateInterval = 50;
 unsigned long lastUpdateMillis = 0;
 
 void setup() {
