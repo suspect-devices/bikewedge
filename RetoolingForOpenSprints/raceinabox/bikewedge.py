@@ -55,6 +55,9 @@ try:
                     if len(chunk)>0 and chunk[0] == 's':
                         print "(RE)SET RACE !!!"
                         csocket.sendall("s\n");
+                    if len(chunk)>0 and chunk[0] == 'g':
+                        print "GO!!!!!!!!!!"
+                        csocket.sendall("g\n");
                 if len(receivedData)==0:
                     print "ISSUE WITH CLIENT"
                 
